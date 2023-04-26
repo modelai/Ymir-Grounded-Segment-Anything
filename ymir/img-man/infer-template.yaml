@@ -1,0 +1,5 @@
+text_prompt: objects
+device: cuda
+box_threshold: 0.3
+text_threshold: 0.25
+use_fake_label: True

@@ -1,0 +1,8 @@
+FROM youdaoyzbx/ymir-executor:ymir2.1.0-grounding-sam-cu111-base
+
+COPY . /app
+
+RUN mkdir -p /img-man && mv /app/ymir/img-man/*.yaml /img-man/
+
+RUN echo "python3 /app/ymir/start.py" > /usr/bin/start.sh
+CMD bash /usr/bin/start.sh

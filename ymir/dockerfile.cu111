@@ -1,0 +1,54 @@
+ARG PYTORCH="1.8.0"
+ARG CUDA="11.1"
+ARG CUDNN="8"
+ARG RUNTIME="devel"
+
+# cuda11.1 + pytorch 1.9.0 + cudnn8 not work!!!
+# docker build -t youdaoyzbx/ymir-executor:ymir2.1.0-grounding-sam-cu111-base -f ymir/dockerfile.cu111 .
+# docker build -t youdaoyzbx/ymir-executor:ymir2.1.0-grounding-sam-cu111-infer -f ymir/dockerfile.cu111 .
+FROM pytorch/pytorch:${PYTORCH}-cuda${CUDA}-cudnn${CUDNN}-${RUNTIME}
+
+ENV TORCH_CUDA_ARCH_LIST="6.0 6.1 7.0+PTX"
+ENV TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
+ENV CMAKE_PREFIX_PATH="$(dirname $(which conda))/../"
+ENV LANG=C.UTF-8
+ENV PYTHONPATH=.
+
+# Arguments to build Docker Image using CUDA
+ARG USE_CUDA=1
+
+ENV AM_I_DOCKER True
+ENV BUILD_WITH_CUDA "${USE_CUDA}"
+ENV CUDA_HOME /usr/local/cuda-11.1/
+
+RUN mkdir -p /app
+COPY . /app
+
+RUN apt-key del 7fa2af80 \
+    && apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub \
+    && apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/7fa2af80.pub
+
+RUN	sed -i 's#http://archive.ubuntu.com#https://mirrors.ustc.edu.cn#g' /etc/apt/sources.list \
+    && sed -i 's#http://security.ubuntu.com#https://mirrors.ustc.edu.cn#g' /etc/apt/sources.list
+
+RUN apt-get update && apt-get install --no-install-recommends ffmpeg=7:* \
+    libsm6=2:* libxext6=2:* git=1:* nano=2.* \
+    vim=2:* -y \
+    && apt-get clean && apt-get autoremove && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+RUN python -m pip install --no-cache-dir -e segment_anything && \
+    python -m pip install --no-cache-dir -e GroundingDINO
+
+RUN pip install --no-cache-dir opencv-python==4.7.0.72 \
+    pycocotools==2.0.6 matplotlib==3.5.3 \
+    onnxruntime==1.14.1 onnx==1.13.1 ipykernel==6.16.2
+
+# install ymir-exc sdk
+RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple \
+    && pip install "git+https://github.com/yzbx/ymir-executor-sdk.git@ymir2.1.0"
+
+RUN mkdir -p /img-man && mv /app/ymir/img-man/*.yaml /img-man/
+
+RUN echo "python3 /app/ymir/start.py" > /usr/bin/start.sh
+CMD bash /usr/bin/start.sh
