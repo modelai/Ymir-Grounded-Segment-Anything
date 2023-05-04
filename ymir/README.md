@@ -1,6 +1,38 @@
 # YMIR-GroundingSAM
 
+结合YMIR, Grounding-DINO 与 Segment Everything Model 的实例分割镜像，仅支持推理功能。
+
+- 输入：文本 + 图像
+
+- 输出：文件对应目标的分割结果
+
+## 仓库地址
+
+- 🌈代码：[modelai/Ymir-Grounded-Segment-Anything](https://github.com/modelai/Ymir-Grounded-Segment-Anything)
+
+- 📀镜像: youdaoyzbx/ymir-executor:ymir2.1.0-grounding-sam-light-cu111-infer
+
+- 📘文档：[ymir-executor-doc](https://ymir-executor-fork.readthedocs.io/zh/latest/)
+
+- 🏠基地：[ymir-executor-fork](https://github.com/modelai/ymir-executor-fork)
+
+## 推理参数
+
+| 超参数 | 默认值 | 类型 | 说明 | 建议 |
+| - | - | - | - | - |
+| hyper-parameter | default value | type | note | advice |
+| text_prompt | objects | 字符串 | grounding-dino 的 prompt | - |
+| device | cuda | cuda/cpu | 推理设备 | 有gpu 采用 cuda, 无gpu 采用 cpu |
+| box_threshold | 0.3 | 浮点数 | 置信度阈值 | - |
+| text_threshold | 0.25 | 浮点数 | 文本特征阈值 | - |
+| use_fake_label | True | 布尔值 | ymir2.5.0以下, 只支持True | 参见备注 |
+
+** use_fake_label ** : 由于 GroundingSAM 可能产生项目类别集合之外的类别，导致无法在前端正确显示，因此可以设置 use_fake_label=True, 用项目类别进行替代以正常显示。
+
 ## 启动命令
+
+修改后的仅能在ymir环境下运行
+
 ```
 python ymir/start.py
 
