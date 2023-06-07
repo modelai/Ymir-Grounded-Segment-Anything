@@ -1,0 +1,10 @@
+ymir/*.pth
+assets
+playground
+GroundingDINO
+segment_anything
+grounded-sam-osx
+voxelnext_3d_box
+outputs
+.git
+*.ipynb

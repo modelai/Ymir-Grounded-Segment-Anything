@@ -1,7 +1,7 @@
 # FROM youdaoyzbx/ymir-executor:ymir2.1.0-grounding-sam-cu111-base
-FROM youdaoyzbx/ymir-executor:ymir2.1.0-grounding-sam-light-cu111-infer
+FROM youdaoyzbx/ymir-executor:ymir2.5.0-grounded-huge-sam-cu111-base
 
-COPY . /app
+COPY . /app/
 
 RUN mkdir -p /img-man && mv /app/ymir/img-man/*.yaml /img-man/
 
