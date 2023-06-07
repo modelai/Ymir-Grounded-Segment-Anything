@@ -1,3 +1,4 @@
+import glob
 import json
 import logging
 import random
@@ -28,14 +29,17 @@ def _run_infer(cfg: edict) -> None:
     device = cfg.param.device
     box_threshold = float(cfg.param.box_threshold)
     text_threshold = float(cfg.param.text_threshold)
+    sam_vit = cfg.param.sam_vit
+    assert sam_vit in ['vit_b', 'vit_l', 'vit_h']
+
+    sam_checkpoint = glob.glob(f'ymir/sam_{sam_vit}*.pth')[0]
 
     logging.info(f'use device {device} to run task')
 
     command = [
         'python3', 'grounded_sam_demo.py', '--input', index_file, '--config',
-        'GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py', '--sam_checkpoint',
-        'ymir/sam_vit_b_01ec64.pth', '--grounded_checkpoint', 'ymir/groundingdino_swint_ogc.pth', '--device', device,
-        '--box_threshold',
+        'GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py', '--sam_checkpoint', sam_checkpoint,
+        '--grounded_checkpoint', 'ymir/groundingdino_swint_ogc.pth', '--device', device, '--box_threshold',
         str(box_threshold), '--text_threshold',
         str(text_threshold), '--text_prompt', text_prompt
     ]
@@ -63,7 +67,10 @@ def modify_command_results(infer_result_file, class_names) -> dict:
 
     # use fake label
     for cat_info in coco_results['categories']:
-        cat_info['name'] = random.choice(class_names)
+        if len(class_names) == 0:
+            cat_info['name'] = 'unknown'
+        else:
+            cat_info['name'] = random.choice(class_names)
 
     return coco_results
 

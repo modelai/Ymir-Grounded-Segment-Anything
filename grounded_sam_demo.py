@@ -75,14 +75,11 @@ def get_grounding_output(model, image, caption, box_threshold, text_threshold, w
     # build pred
     pred_phrases = []
     scores = []
-    for logit, box in zip(logits_filt, boxes_filt):
+    for logit in logits_filt:
         pred_phrase = get_phrases_from_posmap(logit > text_threshold, tokenized, tokenlizer)
         score = round(logit.max().item(), 4)
         scores.append(score)
-        if with_logits:
-            pred_phrases.append(pred_phrase + f"({score})")
-        else:
-            pred_phrases.append(pred_phrase)
+        pred_phrases.append(pred_phrase)
 
     return boxes_filt, scores, pred_phrases
 
@@ -198,10 +195,19 @@ if __name__ == "__main__":
                                                                 device=device,
                                                                 with_logits=False)
 
-        predictor.set_image(np.array(image_pil))
+        write_monitor_logger(round(idx / N, 2))
+        basename = os.path.basename(image_path)
 
         size = image_pil.size
         H, W = size[1], size[0]
+        img_info = dict(id=img_id, file_name=basename, width=W, height=H)
+        coco_results['images'].append(img_info)
+
+        if boxes_filt.size(0) == 0:
+            img_id += 1
+            continue
+
+        predictor.set_image(np.array(image_pil))
         for i in range(boxes_filt.size(0)):
             boxes_filt[i] = boxes_filt[i] * torch.Tensor([W, H, W, H])
             boxes_filt[i][:2] -= boxes_filt[i][2:] / 2
@@ -217,13 +223,10 @@ if __name__ == "__main__":
             multimask_output=False,
         )
 
-        # save data for ymir inference
-        write_monitor_logger(round(idx / N, 2))
-
-        basename = os.path.basename(image_path)
-
         for box, mask, score, label in zip(boxes_filt.data.cpu().numpy(),
                                            masks.data.cpu().numpy(), scores, pred_phrases):
+            label = label or 'unknown'
+
             if label not in label2id:
                 label2id[label] = cat_id
                 cat_info = dict(id=cat_id, name=str(label), supercategory="none")
@@ -252,8 +255,6 @@ if __name__ == "__main__":
                 coco_results['annotations'].append(ann_info)
                 ann_id += 1
 
-        img_info = dict(id=img_id, file_name=basename, width=W, height=H)
-        coco_results['images'].append(img_info)
         img_id += 1
 
     rw.write_infer_result(infer_result=coco_results, algorithm='segmentation')

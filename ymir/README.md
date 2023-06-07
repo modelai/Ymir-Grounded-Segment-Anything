@@ -25,9 +25,7 @@
 | device | cuda | cuda/cpu | 推理设备 | 有gpu 采用 cuda, 无gpu 采用 cpu |
 | box_threshold | 0.3 | 浮点数 | 置信度阈值 | - |
 | text_threshold | 0.25 | 浮点数 | 文本特征阈值 | - |
-| use_fake_label | True | 布尔值 | ymir2.5.0以下, 只支持True | 参见备注 |
-
-** use_fake_label ** : 由于 GroundingSAM 可能产生项目类别集合之外的类别，导致无法在前端正确显示，因此可以设置 use_fake_label=True, 用项目类别进行替代以正常显示。
+| sam_vit | vit_h | vit_h/l/b | huge/large/base | vit_h 精度最高, vit_b 最快 |
 
 ## 启动命令
 

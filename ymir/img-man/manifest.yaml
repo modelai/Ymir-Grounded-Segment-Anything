@@ -1,2 +1,2 @@
-# 4 for instance segmentation
-"object_type": 4
+# 4 for instance segmentation, 50 for multi-mode
+"object_type": 50

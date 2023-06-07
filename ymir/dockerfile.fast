@@ -1,4 +1,5 @@
-FROM youdaoyzbx/ymir-executor:ymir2.1.0-grounding-sam-cu111-base
+# FROM youdaoyzbx/ymir-executor:ymir2.1.0-grounding-sam-cu111-base
+FROM youdaoyzbx/ymir-executor:ymir2.1.0-grounding-sam-light-cu111-infer
 
 COPY . /app
 
