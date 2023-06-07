@@ -19,7 +19,8 @@ import GroundingDINO.groundingdino.datasets.transforms as T
 from GroundingDINO.groundingdino.models import build_model
 from GroundingDINO.groundingdino.util import box_ops
 from GroundingDINO.groundingdino.util.slconfig import SLConfig
-from GroundingDINO.groundingdino.util.utils import (clean_state_dict, get_phrases_from_posmap)
+from GroundingDINO.groundingdino.util.utils import (clean_state_dict,
+                                                    get_phrases_from_posmap)
 # segment anything
 from segment_anything import SamPredictor, sam_model_registry
 
@@ -101,7 +102,7 @@ def show_box(box, ax, label):
     ax.text(x0, y0, label)
 
 
-def save_mask_data(output_dir, mask_list, box_list, label_list):
+def save_mask_data(output_dir, mask_list, box_list, score_list, label_list):
     value = 0  # 0 for background
 
     mask_img = torch.zeros(mask_list.shape[-2:])
@@ -113,14 +114,12 @@ def save_mask_data(output_dir, mask_list, box_list, label_list):
     plt.savefig(os.path.join(output_dir, 'mask.jpg'), bbox_inches="tight", dpi=300, pad_inches=0.0)
 
     json_data = [{'value': value, 'label': 'background'}]
-    for label, box in zip(label_list, box_list):
+    for label, box, score in zip(label_list, box_list, score_list):
         value += 1
-        name, logit = label.split('(')
-        logit = logit[:-1]  # the last is ')'
         json_data.append({
             'value': value,
-            'label': name,
-            'logit': float(logit),
+            'label': label,
+            'logit': score,
             'box': box.numpy().tolist(),
         })
     with open(os.path.join(output_dir, 'mask.json'), 'w') as f:
@@ -141,6 +140,7 @@ if __name__ == "__main__":
     parser.add_argument("--text_threshold", type=float, default=0.25, help="text threshold")
 
     parser.add_argument("--device", type=str, default="cpu", help="running on cpu only!, default=False")
+    parser.add_argument("--save_img", action='store_true', help='save image on disk')
     args = parser.parse_args()
 
     # cfg
@@ -195,7 +195,9 @@ if __name__ == "__main__":
                                                                 device=device,
                                                                 with_logits=False)
 
-        write_monitor_logger(round(idx / N, 2))
+        if not args.save_img:
+            write_monitor_logger(round(idx / N, 2))
+
         basename = os.path.basename(image_path)
 
         size = image_pil.size
@@ -207,14 +209,14 @@ if __name__ == "__main__":
             img_id += 1
             continue
 
-        predictor.set_image(np.array(image_pil))
+        predictor.set_image(np.array(image_pil))  # 0-1
         for i in range(boxes_filt.size(0)):
             boxes_filt[i] = boxes_filt[i] * torch.Tensor([W, H, W, H])
             boxes_filt[i][:2] -= boxes_filt[i][2:] / 2
             boxes_filt[i][2:] += boxes_filt[i][:2]
 
         boxes_filt = boxes_filt.cpu()
-        transformed_boxes = predictor.transform.apply_boxes_torch(boxes_filt, image.shape[:2]).to(device)
+        transformed_boxes = predictor.transform.apply_boxes_torch(boxes_filt, [H, W]).to(device)
 
         masks, _, _ = predictor.predict_torch(
             point_coords=None,
@@ -222,6 +224,9 @@ if __name__ == "__main__":
             boxes=transformed_boxes.to(device),
             multimask_output=False,
         )
+
+        if args.save_img:
+            continue
 
         for box, mask, score, label in zip(boxes_filt.data.cpu().numpy(),
                                            masks.data.cpu().numpy(), scores, pred_phrases):
@@ -257,17 +262,20 @@ if __name__ == "__main__":
 
         img_id += 1
 
-    rw.write_infer_result(infer_result=coco_results, algorithm='segmentation')
-
     # draw output image
-    # plt.figure(figsize=(10, 10))
-    # plt.imshow(image)
-    # for mask in masks:
-    #     show_mask(mask.cpu().numpy(), plt.gca(), random_color=True)
-    # for box, label in zip(boxes_filt, pred_phrases):
-    #     show_box(box.numpy(), plt.gca(), label)
+    if args.save_img:
+        output_dir = 'outputs'
+        plt.figure(figsize=(10, 10))
+        cv_image = np.array(image_pil)
+        plt.imshow(cv_image)
+        for mask in masks:
+            show_mask(mask.cpu().numpy(), plt.gca(), random_color=True)
+        for box, score, label in zip(boxes_filt, scores, pred_phrases):
+            show_box(box.numpy(), plt.gca(), f'{label}:{score}')
 
-    # plt.axis('off')
-    # plt.savefig(os.path.join(output_dir, "grounded_sam_output.jpg"), bbox_inches="tight", dpi=300, pad_inches=0.0)
+        plt.axis('off')
+        plt.savefig(os.path.join(output_dir, "grounded_sam_output.jpg"), bbox_inches="tight", dpi=300, pad_inches=0.0)
 
-    # save_mask_data(output_dir, masks, boxes_filt, pred_phrases)
+        save_mask_data(output_dir, masks, boxes_filt, scores, pred_phrases)
+    else:
+        rw.write_infer_result(infer_result=coco_results, algorithm='segmentation')
