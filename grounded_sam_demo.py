@@ -182,13 +182,13 @@ if __name__ == "__main__":
     label2id = {}
     for idx, image_path in enumerate(tqdm(image_list)):
         # load image
-        image_pil, image = load_image(image_path)
+        image_pil, transformed_image = load_image(image_path)
         # visualize raw image
         # image_pil.save(os.path.join(output_dir, "raw_image.jpg"))
 
         # run grounding dino model
         boxes_filt, scores, pred_phrases = get_grounding_output(model,
-                                                                image,
+                                                                transformed_image,
                                                                 text_prompt,
                                                                 box_threshold,
                                                                 text_threshold,
@@ -207,7 +207,8 @@ if __name__ == "__main__":
             img_id += 1
             continue
 
-        predictor.set_image(np.array(image_pil))
+        image = np.array(image_pil)
+        predictor.set_image(image)
         for i in range(boxes_filt.size(0)):
             boxes_filt[i] = boxes_filt[i] * torch.Tensor([W, H, W, H])
             boxes_filt[i][:2] -= boxes_filt[i][2:] / 2
