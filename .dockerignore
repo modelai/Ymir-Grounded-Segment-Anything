@@ -1,8 +1,10 @@
-ymir/*.pth
+# ymir/*.pth
 assets
 playground
-GroundingDINO
-segment_anything
+ymir/sam_vit_h*.pth
+ymir/sam_vit_l*.pth
+# GroundingDINO
+# segment_anything
 grounded-sam-osx
 voxelnext_3d_box
 outputs
