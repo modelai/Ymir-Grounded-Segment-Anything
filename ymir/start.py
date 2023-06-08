@@ -26,10 +26,10 @@ def _run_infer(cfg: edict) -> None:
 
     index_file = cfg.ymir.input.candidate_index_file
     text_prompt = cfg.param.text_prompt
-    device = cfg.param.device or "cuda"
+    device = cfg.param.get('device', "cuda")
     box_threshold = float(cfg.param.box_threshold)
     text_threshold = float(cfg.param.text_threshold)
-    sam_vit = cfg.param.sam_vit or "vit_b"
+    sam_vit = cfg.param.get('sam_vit', "vit_b")
     assert sam_vit in ['vit_b', 'vit_l', 'vit_h']
 
     sam_checkpoint = glob.glob(f'ymir/sam_{sam_vit}*.pth')[0]

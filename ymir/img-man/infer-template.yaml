@@ -1,5 +1,5 @@
 text_prompt: objects
 box_threshold: 0.3
 text_threshold: 0.25
-sam_vit: vit_b
-device: cuda
+# sam_vit: vit_b
+# device: cuda
